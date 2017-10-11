@@ -20,7 +20,7 @@ import datatypes.UsageSeries;
 public class DatabaseReader 
 {
 	//declaring static class constants
-	public static final int DEFAULT_DATA_POINTS_PER_HOUSE = 100;
+	public static final int DEFAULT_MAX_SAMPLES = 100;
 	public static final String[] COLUMN_NAMES = {"date", "time", "house_id", "usage"};
 	public static final String TABLE_NAME = "usages";
 	
@@ -29,8 +29,8 @@ public class DatabaseReader
 													COLUMN_NAMES[2] + 
 													" FROM " + TABLE_NAME;
 	
-	//declaring local instance constants
-	private final int MAX_SAMPLES;
+	//declaring instance constants
+	public final int MAX_SAMPLES;
 	
 	//declaring instance variables
 	private Connection connection;
@@ -39,7 +39,7 @@ public class DatabaseReader
 	//default constructor
 	public DatabaseReader(String dbPath) throws FileNotFoundException, SQLException
 	{
-		this(dbPath, DatabaseReader.DEFAULT_DATA_POINTS_PER_HOUSE);
+		this(dbPath, DatabaseReader.DEFAULT_MAX_SAMPLES);
 	}
 	
 	//full constructor
@@ -101,7 +101,7 @@ public class DatabaseReader
 	 * 
 	 * THIS IS A COSTLY OPERATION AND SHOULD BE USED SPARINGLY
 	 */
-	public UsageSeries[] fillUsageData() throws SQLException
+	public UsageSeries[] getMaxSamples() throws SQLException
 	{
 		//get all ids and prep container for return
 		Integer[] distinctIds = this.getDistinctIds();
@@ -127,6 +127,7 @@ public class DatabaseReader
 			UsageSeries data = new UsageSeries(distinctIds[i].intValue(), MAX_SAMPLES);
 			while (results.next())
 			{
+				//parse row data into DataPoint
 				String sDate = results.getString(COLUMN_NAMES[0]);
 				String sTime = results.getString(COLUMN_NAMES[1]);
 				double usage = results.getDouble(COLUMN_NAMES[3]);
@@ -139,15 +140,19 @@ public class DatabaseReader
 									Integer.parseInt(dateComp[2]),
 									Integer.parseInt(timeComp[0]),
 									Integer.parseInt(timeComp[1]));
+				
+				//add to series
 				data.add(new DataPoint(date, usage));
 			}
 			
 			//add returnable
 			returnable[i] = data;
-			System.out.println(data.toString());	//TODO del
+			results.close();
 		}
 		
-		return null;
+		//close active resources and return
+		s.close();
+		return returnable;
 	}
 
 	
@@ -155,6 +160,6 @@ public class DatabaseReader
 	public static void main(String[] args) throws FileNotFoundException, SQLException 
 	{
 		DatabaseReader dbr = new DatabaseReader("dat/testdatabase.db", 5);
-		dbr.fillUsageData();
+		dbr.getMaxSamples();
 	}
 }

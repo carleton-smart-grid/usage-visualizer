@@ -97,7 +97,7 @@ public class UsageSeries
 		String s = "";
 		for (DataPoint dat : data)
 		{
-			s += "[" + dat.date.toString() + "," + dat.usage + "], ";
+			s += "[" + dat.toString() + "], ";
 		}
 		
 		return "id: " + id + ", max: " + maxHold + ", data:{" + s + "}";
