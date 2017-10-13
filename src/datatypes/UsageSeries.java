@@ -1,105 +1,51 @@
 package datatypes;
 
-import java.util.LinkedList;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
+import org.jfree.data.xy.XYDataItem;
+import org.jfree.data.xy.XYSeries;
 
-
-public class UsageSeries 
+public class UsageSeries extends XYSeries
 {
+	//declaring class constants
+	public static final int DEFAULT_MAX_ITEMS = 100;
+	
 	//declaring local instance variables
-	private int maxHold;
-	private int id;
-	private LinkedList<DataPoint> data;
+	private final int houseId;
 	
 	
-	//generic constructor
-	public UsageSeries(int houseId, int maxHold)
+	public UsageSeries(Comparable key, boolean autoSort, boolean allowDuplicateXValues,int id) 
 	{
-		this.id = houseId;
-		this.maxHold = maxHold;
-		data = new LinkedList<DataPoint>();
+		super(key, autoSort, allowDuplicateXValues);
+		this.houseId = id;
+		this.setMaximumItemCount(DEFAULT_MAX_ITEMS);
 	}
 	
 	
-	//generic getters
 	public int getHouseId()
 	{
-		return id;
+		return houseId;
 	}
-	public int getMaxDataPoints()
+	
+	public void add(Date date, double usage)
 	{
-		return maxHold;
+		this.add(new XYDataItem(new Long(date.getTime()), new Double(usage)));
 	}
-	public LinkedList<DataPoint> getDataSeries()
-	{
-		return data;		// note that modifying data from pointer outside 
-							// of instance causes bad things
-	}
-	
-	
-	//generic setters
-	public void setHouseId(int id)
-	{
-		this.id = id;
-	}
-	public void setMaxHold(int max)
-	{
-		this.maxHold = max;
-		while (data.size() > maxHold)
-		{
-			data.removeFirst();
-		}
-	}
-	
-	
-	/*
-	 * add a new entry to data map
-	 * if map is full, remove oldest entry
-	 */
-	public void add(DataPoint point)
-	{
-		if (point != null)
-		{
-			if(data.size() >= maxHold)
-			{
-				data.removeFirst();
-			}
-			data.add(point);
-		}
-	}
-	
-	
-	//clear data
-	public void clear()
-	{
-		data.clear();
-	}
-	
-	
-	//return total number of points
-	public int getSize()
-	{
-		return data.size();
-	}
-	
-
-	//return if full
-	public boolean isFull()
-	{
-		return (data.size() >= maxHold);
-	}
-	
 	
 	@Override
-	//return string (mostly for debug
 	public String toString()
 	{
-		String s = "";
-		for (DataPoint dat : data)
-		{
-			s += "[" + dat.toString() + "], ";
-		}
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		
-		return "id: " + id + ", max: " + maxHold + ", data:{" + s + "}";
+		String s = "ID=" + houseId + "values={";
+		for (Object point : this.data)
+		{
+			XYDataItem item = (XYDataItem)point;
+			s += "[" + format.format(new Date(item.getX().longValue())) + ","
+					+ item.getYValue() + "], ";
+		}
+		return s;
 	}
+
 }

@@ -6,6 +6,14 @@ package ctrl;
 import java.io.FileNotFoundException;
 import java.sql.*;
 
+import javax.swing.JFrame;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
 //import packages
 import ui.UsageView;
 import datatypes.UsageSeries;
@@ -17,7 +25,7 @@ public class UsageControl implements Runnable
 	//declaring local instance variables
 	private DatabaseReader db;
 	private UsageView ui;
-	private UsageSeries[] samples;
+	private XYSeries[] samples;
 	private double updatePeriod;
 	
 	
@@ -25,7 +33,7 @@ public class UsageControl implements Runnable
 	public UsageControl(String dbPath, double updatePeriod) throws FileNotFoundException, SQLException
 	{
 		db = new DatabaseReader(dbPath, 5);
-		ui = new UsageView();
+		ui = new UsageView(false);
 		samples = null;
 		this.updatePeriod = updatePeriod;
 	}
@@ -39,18 +47,22 @@ public class UsageControl implements Runnable
 		{
 			//get initial set of datapoints
 			System.out.println("Querying maximum <" + db.MAX_SAMPLES + "> most-recent DataPoints per <" + db.getDistinctIds().length + "> distinct id(s)");
-			samples = db.getMaxSamples();
-			for(UsageSeries series : samples)
+			XYSeriesCollection samples = db.getMaxSamples();
+			for(Object o : samples.getSeries())
 			{
-				System.out.println("Found " + String.format("%03d",series.getSize()) + "/" + series.getMaxDataPoints() + " DataPoints for ID=" + series.getHouseId());
+				UsageSeries series = (UsageSeries)o;
+				System.out.println("Found " + 
+									String.format("%03d",series.getItemCount()) + "/" + 
+									String.format("%03d", series.getMaximumItemCount()) + 
+									" DataPoints for ID=" + series.getHouseId());
+				System.out.println(series.toString());
 			}
 			System.out.println("Done!");
 			
 			//enable gui
+			ui.updateGraphData(samples);
 			ui.setVisible(true);
-			
-			//update displayed graph
-			//TODO
+			ui.setInfoText("hello");
 			
 			//setup update frequency for graph
 			
