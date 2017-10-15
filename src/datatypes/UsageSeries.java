@@ -8,8 +8,8 @@ import org.jfree.data.xy.XYSeries;
 
 public class UsageSeries extends XYSeries
 {
-	//declaring local constants
-	public static final int DEFAULT_MAX_ITEMS = 100;//Integer.MAX_VALUE;
+	//declaring local constantsarg0);
+	public static final int DEFAULT_MAX_ITEMS = Integer.MAX_VALUE;
 	
 	//declaring local instance variables
 	private final int houseId;

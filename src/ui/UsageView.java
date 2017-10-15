@@ -68,6 +68,7 @@ public class UsageView extends JFrame
 		chartPanel = new ChartPanel(chart);
 		chartPanel.setFillZoomRectangle(true);
 		chartPanel.setMouseWheelEnabled(true);
+		chartPanel.setRangeZoomable(false);
         contentPane.add(chartPanel, BorderLayout.CENTER);
 		
 		//add panels for other info
@@ -104,9 +105,9 @@ public class UsageView extends JFrame
 		         PlotOrientation.VERTICAL, 
 		         true, true, false);
 		chartPanel.setChart(chart);
+		chartPanel.setRangeZoomable(false);
 		
 		//set axis to display ms from epoch as human-readable date-times
-		((XYPlot)chart.getPlot()).setDomainAxis(new DateAxis(xLabel));
-		((XYPlot)chart.getPlot()).setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+		chart.getXYPlot().setDomainAxis(new DateAxis(xLabel));
 	}	
 }

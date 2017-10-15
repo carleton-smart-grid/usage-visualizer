@@ -5,6 +5,7 @@ package ctrl;
 //import external libraries
 import java.io.FileNotFoundException;
 import java.sql.*;
+import java.util.List;
 
 import javax.swing.JFrame;
 
@@ -25,16 +26,14 @@ public class UsageControl implements Runnable
 	//declaring local instance variables
 	private DatabaseReader db;
 	private UsageView ui;
-	private XYSeries[] samples;
 	private double updatePeriod;
 	
 	
 	//generic constructor
 	public UsageControl(String dbPath, double updatePeriod) throws FileNotFoundException, SQLException
 	{
-		db = new DatabaseReader(dbPath, Integer.MAX_VALUE);
+		db = new DatabaseReader(dbPath, 100);
 		ui = new UsageView(false);
-		samples = null;
 		this.updatePeriod = updatePeriod;
 	}
 	
@@ -46,11 +45,11 @@ public class UsageControl implements Runnable
 		try
 		{
 			//get initial set of datapoints
-			System.out.println("Querying maximum <" + db.MAX_SAMPLES + "> most-recent DataPoints per <" + db.getDistinctIds().length + "> distinct id(s)");
-			XYSeriesCollection samples = db.getMaxSamples();
-			for(Object o : samples.getSeries())
+			System.out.println("Querying maximum <" + db.MAX_SAMPLES + "> most-recent DataPoints per distinct id(s)");
+			db.initialize();
+			List<UsageSeries> samples = db.getSeries();
+			for(UsageSeries series : samples)
 			{
-				UsageSeries series = (UsageSeries)o;
 				System.out.println("Found " + 
 									series.getItemCount() + "/" + 
 									series.getMaximumItemCount() + 
@@ -60,7 +59,7 @@ public class UsageControl implements Runnable
 			System.out.println("Done!");
 			
 			//enable gui
-			ui.displayDateLineChart(samples, "Reported Power Usage", "Date", "Power Usage (kWh)");
+			ui.displayDateLineChart(db.getCollection(), "Reported Power Usage", "Date", "Power Usage (kWh)");
 			ui.setVisible(true);
 			ui.setInfoText("hello");
 			
