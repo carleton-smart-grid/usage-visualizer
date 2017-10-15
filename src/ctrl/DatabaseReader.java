@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -20,7 +21,7 @@ import datatypes.UsageSeries;
 
 
 
-public class DatabaseReader 
+public class DatabaseReader implements Runnable
 {
 	//declaring static class constants
 	public static final int DEFAULT_MAX_SAMPLES = 100;
@@ -36,7 +37,9 @@ public class DatabaseReader
 	public final int MAX_SAMPLES;
 	
 	//declaring instance variables
+	private boolean lockFlag;
 	private Connection connection;
+	private XYSeriesCollection series;
 	
 	
 	//default constructor
@@ -54,6 +57,7 @@ public class DatabaseReader
 			connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 			connection.setAutoCommit(false);
 			this.MAX_SAMPLES = datapoints;
+			this.lockFlag = false;
 		}
 		else
 		{
@@ -63,50 +67,51 @@ public class DatabaseReader
 	
 	
 	//close connection to db
-	public void close()
+	public synchronized void close()
 	{
 		try
 		{
+			//wait for lock
+			while (lockFlag)
+			{
+				this.wait();
+			}
+			
 			connection.close();
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
+			System.exit(0);
 		}
 		catch (SQLException e){}
 	}
 	
 	
 	/*
-	 * get the current house_ids in use
-	 * returns an array of the house_ids found, empty array if no entries
-	 */
-	public Integer[] getDistinctIds() throws SQLException
-	{
-		//check database for all distinct house_ids
-		Statement session = connection.createStatement();
-		ResultSet results = session.executeQuery(FIND_ALL_HOUSE_IDS);
-		
-		//parse all IDs out
-		ArrayList<Integer> distinctIds = new ArrayList<Integer>();
-		while(results.next())
-		{
-			distinctIds.add(results.getInt(COLUMN_NAMES[2]));
-		}
-		
-		//close active objects
-		session.close();
-		results.close();
-		
-		return distinctIds.toArray(new Integer[0]);
-	}
-	
-	/*
 	 * read up to n samples of usage per house_id
 	 * COSTLY OPERATION AS n INCREASES IN SIZE
 	 */
-	private XYSeriesCollection getNSamples(int n) throws SQLException
+	private synchronized XYSeriesCollection getNSamples(int n) throws SQLException
 	{
+		//wait for lock
+		while (lockFlag)
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+		lockFlag = true;
+		
 		//get all ids and prep container for return
 		Integer[] distinctIds = this.getDistinctIds();
 		XYSeriesCollection returnable = new XYSeriesCollection();
-		
 		//open database input statement for queries
 		Statement s = connection.createStatement();
 		
@@ -151,9 +156,73 @@ public class DatabaseReader
 		
 		//close active resources and return
 		s.close();
+		lockFlag = false;
+		this.notifyAll();
 		return returnable;
 	}
 	
+	
+	/*
+	 * get the current house_ids in use
+	 * returns an array of the house_ids found, empty array if no entries
+	 */
+	public synchronized Integer[] getDistinctIds() throws SQLException
+	{
+		//wait for lock
+		while (lockFlag)		//TODO DEADLOCK HERE
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+		lockFlag = true;
+		
+		//check database for all distinct house_ids
+		Statement session = connection.createStatement();
+		ResultSet results = session.executeQuery(FIND_ALL_HOUSE_IDS);
+		
+		//parse all IDs out
+		ArrayList<Integer> distinctIds = new ArrayList<Integer>();
+		while(results.next())
+		{
+			distinctIds.add(results.getInt(COLUMN_NAMES[2]));
+		}
+		
+		//close active objects
+		session.close();
+		results.close();
+		
+		lockFlag = false;
+		this.notifyAll();
+		return distinctIds.toArray(new Integer[0]);
+	}
+	
+	
+	//get total number of distinct IDs
+	public synchronized int getSeriesCount()
+	{
+		return series.getSeriesCount();
+	}
+	
+	
+	//get all series
+	public synchronized List<UsageSeries> getSeries()
+	{
+		return series.getSeries();
+	}
+	
+	
+	//get collection
+	public synchronized XYSeriesCollection getCollection()
+	{
+		return series;
+	}
 	
 	/*
 	 * read up to MAX_SAMPLES of usages values per house_id and 
@@ -161,9 +230,9 @@ public class DatabaseReader
 	 * 
 	 * THIS IS A COSTLY OPERATION AND SHOULD BE USED SPARINGLY
 	 */
-	public XYSeriesCollection getMaxSamples() throws SQLException
+	public void initialize() throws SQLException
 	{
-		return this.getNSamples(MAX_SAMPLES);
+		series = getNSamples(MAX_SAMPLES);
 	}
 	
 	
@@ -178,10 +247,12 @@ public class DatabaseReader
 	}
 
 	
-	//TODO DELETE
-	public static void main(String[] args) throws FileNotFoundException, SQLException 
+	@Override
+	/*
+	 * periodically check database for new entries to add to series
+	 */
+	public void run()
 	{
-		DatabaseReader dbr = new DatabaseReader("dat/testdatabase.db", 5);
-		dbr.getMaxSamples();
+		
 	}
 }
