@@ -122,7 +122,6 @@ public class DatabaseReader
 							COLUMN_NAMES[1] + " DESC " +
 							"LIMIT " + n;
 			ResultSet results = s.executeQuery(query);
-			
 			//parse results
 			UsageSeries data = new UsageSeries("id=" + distinctIds[i], false, true, distinctIds[i]);
 			while (results.next())

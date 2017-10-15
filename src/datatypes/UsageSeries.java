@@ -8,8 +8,8 @@ import org.jfree.data.xy.XYSeries;
 
 public class UsageSeries extends XYSeries
 {
-	//declaring class constants
-	public static final int DEFAULT_MAX_ITEMS = 100;
+	//declaring local constants
+	public static final int DEFAULT_MAX_ITEMS = 100;//Integer.MAX_VALUE;
 	
 	//declaring local instance variables
 	private final int houseId;
@@ -36,7 +36,7 @@ public class UsageSeries extends XYSeries
 	@Override
 	public String toString()
 	{
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		
 		String s = "ID=" + houseId + "values={";
 		for (Object point : this.data)

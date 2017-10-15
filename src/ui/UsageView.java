@@ -11,9 +11,12 @@ import javax.swing.border.EmptyBorder;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.RectangleInsets;
 
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
@@ -59,7 +62,7 @@ public class UsageView extends JFrame
 		         x,
 		         PlotOrientation.VERTICAL, 
 		         true, true, false);
-		
+		/* TEST CONFIG FOR CHART */
 		
 		//add and configure panel for chart
 		chartPanel = new ChartPanel(chart);
@@ -90,17 +93,20 @@ public class UsageView extends JFrame
 	
 	
 	//update the displayed graph
-	public void updateGraphData(XYSeriesCollection seriesSet)
+	public void displayDateLineChart(XYSeriesCollection seriesSet, String title, String xLabel, String yLabel)
 	{
+		//create and add new chart
 		chart = ChartFactory.createXYLineChart(
-		         "Browser usage statastics", 
-		         "Category",
-		         "Score", 
+		         title, 
+		         xLabel,
+		         yLabel, 
 		         seriesSet,
 		         PlotOrientation.VERTICAL, 
 		         true, true, false);
-		chartPanel.repaint();
-		chartPanel.setVisible(true);
-	}
-	
+		chartPanel.setChart(chart);
+		
+		//set axis to display ms from epoch as human-readable date-times
+		((XYPlot)chart.getPlot()).setDomainAxis(new DateAxis(xLabel));
+		((XYPlot)chart.getPlot()).setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+	}	
 }

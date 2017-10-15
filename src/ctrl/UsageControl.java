@@ -32,7 +32,7 @@ public class UsageControl implements Runnable
 	//generic constructor
 	public UsageControl(String dbPath, double updatePeriod) throws FileNotFoundException, SQLException
 	{
-		db = new DatabaseReader(dbPath, 5);
+		db = new DatabaseReader(dbPath, Integer.MAX_VALUE);
 		ui = new UsageView(false);
 		samples = null;
 		this.updatePeriod = updatePeriod;
@@ -52,15 +52,15 @@ public class UsageControl implements Runnable
 			{
 				UsageSeries series = (UsageSeries)o;
 				System.out.println("Found " + 
-									String.format("%03d",series.getItemCount()) + "/" + 
-									String.format("%03d", series.getMaximumItemCount()) + 
+									series.getItemCount() + "/" + 
+									series.getMaximumItemCount() + 
 									" DataPoints for ID=" + series.getHouseId());
 				System.out.println(series.toString());
 			}
 			System.out.println("Done!");
 			
 			//enable gui
-			ui.updateGraphData(samples);
+			ui.displayDateLineChart(samples, "Reported Power Usage", "Date", "Power Usage (kWh)");
 			ui.setVisible(true);
 			ui.setInfoText("hello");
 			
