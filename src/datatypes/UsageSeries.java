@@ -1,15 +1,33 @@
+/**
+*Class:             UsageSeries.java
+*Project:          	Usage Visualizer
+*Author:            Jason Van Kerkhoven
+*Date of Update:    15/10/2017
+*Version:           1.0.0
+*
+*Purpose:           Provides controlled access to XYSeries.
+*					Overrides a few key methods to alter behavior, notably the add method					
+*
+* 
+*Update Log			v1.0.0
+*						- null
+*/
 package datatypes;
 
+
+
+//import external libraries
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+
+
 
 public class UsageSeries extends XYSeries
 {
 	//declaring local constantsarg0);
-	public static final int DEFAULT_MAX_ITEMS = Integer.MAX_VALUE;
+	public static final int DEFAULT_MAX_ITEMS = 100;
 	
 	//declaring local instance variables
 	private final int houseId;

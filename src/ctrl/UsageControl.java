@@ -1,3 +1,18 @@
+/**
+*Class:             UsageControl.java
+*Project:          	Usage Visualizer
+*Author:            Jason Van Kerkhoven
+*Date of Update:    15/10/2017
+*Version:           1.0.0
+*
+*Purpose:           Main runnable class for Usage Visualizer.
+*					Synchronizes everything, and manages updating the graph.
+*					Handles any user inputs from UI.
+*					
+* 
+*Update Log			v1.0.0
+*						- null
+*/
 package ctrl;
 
 
@@ -7,14 +22,6 @@ import java.io.FileNotFoundException;
 import java.sql.*;
 import java.util.List;
 
-import javax.swing.JFrame;
-
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-
 //import packages
 import ui.UsageView;
 import datatypes.UsageSeries;
@@ -23,6 +30,11 @@ import datatypes.UsageSeries;
 
 public class UsageControl implements Runnable
 {
+	//declaring static constants
+	private static final String GRAPH_TITLE = "Reported Power Usage";
+	private static final String X_AXIS = "Date";
+	private static final String Y_AXIS = "Power Usage (kWh)";
+	
 	//declaring local instance variables
 	private DatabaseReader db;
 	private UsageView ui;
@@ -46,7 +58,11 @@ public class UsageControl implements Runnable
 		{
 			//get initial set of datapoints
 			System.out.println("Querying maximum <" + db.MAX_SAMPLES + "> most-recent DataPoints per distinct id(s)");
+			
+			db.open();
 			db.initialize();
+			db.close();
+			
 			List<UsageSeries> samples = db.getSeries();
 			for(UsageSeries series : samples)
 			{
@@ -59,16 +75,29 @@ public class UsageControl implements Runnable
 			System.out.println("Done!");
 			
 			//enable gui
-			ui.displayDateLineChart(db.getCollection(), "Reported Power Usage", "Date", "Power Usage (kWh)");
+			ui.displayDateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
 			ui.setVisible(true);
-			ui.setInfoText("hello");
 			
-			//setup update frequency for graph
-			
+			//setup update frequency for graph  TODO THIS IS BAD FIX THIS GOOD FOR DEMO ONLY
+			while(true)
+			{
+				Thread.sleep(500);
+				
+				db.open();			//TODO DO NOT INIT EACH TIME BAD FOR EFFICIENCY WHY STOP
+				db.initialize();
+				db.close();
+				
+				System.out.println("updated!");
+				ui.displayDateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
+			}
 		}
 		catch (SQLException e)
 		{
-			//TODO handle this
+			e.printStackTrace();
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
 		}
 	}
 	

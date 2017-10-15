@@ -23,6 +23,7 @@ import sys
 
 # Program constants
 YEAR_CONSTANT = '20'
+TIMEOUT_SECONDS = 60
 
 
 # call using spoofcomms.py usagedat.csv database.db (INT)read_write_freq_in_sec
@@ -35,7 +36,7 @@ rwFreq = int(sys.argv[3])
 waitFlag = rwFreq > 0
 
 # open database connection
-dbConnection = sqlite3.connect(dbPath)
+dbConnection = sqlite3.connect(dbPath, TIMEOUT_SECONDS)
 dbCurser = dbConnection.cursor()
 
 # open the csv file and skip headers

@@ -1,7 +1,22 @@
+/**
+*Class:             DatabaseReader.java
+*Project:          	Usage Visualizer
+*Author:            Jason Van Kerkhoven
+*Date of Update:    15/10/2017
+*Version:           1.0.0
+*
+*Purpose:           Read information from an SQLite3 database configured to 
+*					store usage data in a single table.
+*					
+* 
+*Update Log			v1.0.0
+*						- null
+*/
 package ctrl;
 
 
 
+//import external libraries
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.Connection;
@@ -12,11 +27,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import org.jfree.data.xy.XYDataItem;
-import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+//import local packages
 import datatypes.UsageSeries;
 
 
@@ -24,7 +37,6 @@ import datatypes.UsageSeries;
 public class DatabaseReader implements Runnable
 {
 	//declaring static class constants
-	public static final int DEFAULT_MAX_SAMPLES = 100;
 	public static final String[] COLUMN_NAMES = {"date", "time", "house_id", "usage"};
 	public static final String TABLE_NAME = "usages";
 	
@@ -37,6 +49,7 @@ public class DatabaseReader implements Runnable
 	public final int MAX_SAMPLES;
 	
 	//declaring instance variables
+	private String dbPath;
 	private boolean lockFlag;
 	private Connection connection;
 	private XYSeriesCollection series;
@@ -45,7 +58,7 @@ public class DatabaseReader implements Runnable
 	//default constructor
 	public DatabaseReader(String dbPath) throws FileNotFoundException, SQLException
 	{
-		this(dbPath, DatabaseReader.DEFAULT_MAX_SAMPLES);
+		this(dbPath, UsageSeries.DEFAULT_MAX_ITEMS);
 	}
 	
 	//full constructor
@@ -54,10 +67,10 @@ public class DatabaseReader implements Runnable
 		File db = new File(dbPath);
 		if (db.exists())
 		{
-			connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
-			connection.setAutoCommit(false);
-			this.MAX_SAMPLES = datapoints;
-			this.lockFlag = false;
+			this.dbPath = dbPath;
+			MAX_SAMPLES = datapoints;
+			lockFlag = false;
+			series = new XYSeriesCollection();
 		}
 		else
 		{
@@ -88,6 +101,29 @@ public class DatabaseReader implements Runnable
 	}
 	
 	
+	//open the connection to db
+	public synchronized void open() throws SQLException
+	{
+		try
+		{
+			//wait for lock
+			while (lockFlag)
+			{
+				this.wait();
+			}
+			
+			//connection
+			connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+			connection.setAutoCommit(false);
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
+			System.exit(0);
+		}
+	}
+	
+	
 	/*
 	 * read up to n samples of usage per house_id
 	 * COSTLY OPERATION AS n INCREASES IN SIZE
@@ -107,10 +143,10 @@ public class DatabaseReader implements Runnable
 				System.exit(0);
 			}
 		}
-		lockFlag = true;
 		
 		//get all ids and prep container for return
 		Integer[] distinctIds = this.getDistinctIds();
+		lockFlag = true;
 		XYSeriesCollection returnable = new XYSeriesCollection();
 		//open database input statement for queries
 		Statement s = connection.createStatement();
@@ -168,7 +204,6 @@ public class DatabaseReader implements Runnable
 	 */
 	public synchronized Integer[] getDistinctIds() throws SQLException
 	{
-		/*
 		//wait for lock
 		while (lockFlag)		//TODO DEADLOCK HERE
 		{
@@ -182,7 +217,7 @@ public class DatabaseReader implements Runnable
 				System.exit(0);
 			}
 		}
-		lockFlag = true; */
+		lockFlag = true;
 		
 		//check database for all distinct house_ids
 		Statement session = connection.createStatement();
@@ -227,9 +262,9 @@ public class DatabaseReader implements Runnable
 	
 	/*
 	 * read up to MAX_SAMPLES of usages values per house_id and 
-	 * Default max samples is 100, so if 10 house's will return 1000 usage values
+	 * Default max samples is 100, so if 10 house's will load 1000 usage values
 	 * 
-	 * THIS IS A COSTLY OPERATION AND SHOULD BE USED SPARINGLY
+	 * THIS IS A !_VERY_! COSTLY OPERATION AND SHOULD BE USED SPARINGLY
 	 */
 	public void initialize() throws SQLException
 	{
@@ -254,6 +289,6 @@ public class DatabaseReader implements Runnable
 	 */
 	public void run()
 	{
-		
+		//TODO SETUP AUTO UPDATING AND RUN
 	}
 }

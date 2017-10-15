@@ -1,26 +1,38 @@
+/**
+*Class:             UsageView.java
+*Project:          	Usage Visualizer
+*Author:            Jason Van Kerkhoven
+*Date of Update:    15/10/2017
+*Version:           1.0.0
+*
+*Purpose:           Displays graph information and other data analytics to user.
+*					Can also act as an interface for user.
+*					
+* 
+*Update Log			v1.0.0
+*						- null
+*/
 package ui;
 
+
+
+//import external libraries
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.EventQueue;
-
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleInsets;
-
 import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
 import javax.swing.JTextArea;
+
+
 
 public class UsageView extends JFrame
 {
