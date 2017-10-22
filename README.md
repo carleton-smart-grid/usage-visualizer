@@ -6,7 +6,7 @@ The Graphing Tool is designed to allow a visual representation of the dataflow i
 
 # How to Use
 ## Running the Graphing Tool
-The [graphing tool](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/src/ctrl/UsageControl.java) should be run as a pre-build, executable .jar file from terminal using the command: `java -jar usage-view.jar data.db T`.
+The [graphing tool](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/src/ctrl/UsageControl.java) should be run as a pre-build, executable .jar file from terminal using the command:<br> `java -jar usage-view.jar data.db T`.
 
 
 In which, `data.db` is the relative path to the SQLite3 database file, and `T` is the update period (given as this is normally run with a fairly low refresh rate, period is less cumbersome to type) of the graph.
@@ -19,7 +19,7 @@ It should be noted that the update period should be less than the read-write per
 
 
 ## Running the Comms. Spoofer Tool
-It is advised **before** running the [comms. spoofer](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/dat/spoofcomms.py) script, the SQLite3 database is cleared. This can be done conveniently through running the SQLite3 script `reset.txt`. This can be done through the terminal command: `sqlite3 database.db < reset.txt`.
+It is advised **before** running the [comms. spoofer](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/dat/spoofcomms.py) script, the SQLite3 database is cleared. This can be done conveniently through running the SQLite3 script `reset.txt`. This can be done through the terminal command:<br> `sqlite3 database.db < reset.txt`.
 
 The comms. spoofer is a simple python script run from terminal using the command: `python3 spoofcomms.py dataset.csv database.db rwp`.
 
