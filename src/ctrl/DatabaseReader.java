@@ -2,14 +2,17 @@
 *Class:             DatabaseReader.java
 *Project:          	Usage Visualizer
 *Author:            Jason Van Kerkhoven
-*Date of Update:    15/10/2017
-*Version:           1.0.0
+*Date of Update:    26/10/2017
+*Version:           2.0.0
 *
 *Purpose:           Read information from an SQLite3 database configured to 
 *					store usage data in a single table.
 *					
+*					Keep database updated if run on own thread.
 * 
-*Update Log			v1.0.0
+*Update Log			v2.0.0
+*						-
+*					v1.0.0
 *						- null
 */
 package ctrl;
@@ -47,30 +50,39 @@ public class DatabaseReader implements Runnable
 	
 	//declaring instance constants
 	public final int MAX_SAMPLES;
+	public final boolean DYNAMIC_IDS;
 	
 	//declaring instance variables
 	private String dbPath;
 	private boolean lockFlag;
 	private Connection connection;
 	private XYSeriesCollection series;
+	private int[] liveIds;
 	
 	
-	//default constructor
-	public DatabaseReader(String dbPath) throws FileNotFoundException, SQLException
+	//v2.0.0 constructor
+	public DatabaseReader(String dbPath, boolean dynamicIds) throws FileNotFoundException, SQLException
 	{
-		this(dbPath, UsageSeries.DEFAULT_MAX_ITEMS);
+		this(dbPath, UsageSeries.DEFAULT_MAX_ITEMS, dynamicIds);
 	}
-	
-	//full constructor
+	//v1.0.0 constructor
 	public DatabaseReader(String dbPath, int datapoints) throws FileNotFoundException, SQLException
+	{
+		this(dbPath, UsageSeries.DEFAULT_MAX_ITEMS, true);
+	}	
+	//full constructor
+	public DatabaseReader(String dbPath, int datapoints, boolean dynamicIds) throws FileNotFoundException, SQLException
 	{
 		File db = new File(dbPath);
 		if (db.exists())
 		{
 			this.dbPath = dbPath;
-			MAX_SAMPLES = datapoints;
-			lockFlag = false;
-			series = new XYSeriesCollection();
+			this.lockFlag = false;
+			this.series = new XYSeriesCollection();
+			this.liveIds = new int[0];
+			
+			this.MAX_SAMPLES = datapoints;
+			this.DYNAMIC_IDS = dynamicIds;
 		}
 		else
 		{
@@ -97,7 +109,7 @@ public class DatabaseReader implements Runnable
 			e.printStackTrace();
 			System.exit(0);
 		}
-		catch (SQLException e){}
+		catch (SQLException e){}	//if this exception occurs ???
 	}
 	
 	
@@ -281,6 +293,21 @@ public class DatabaseReader implements Runnable
 	{
 		return this.getNSamples(1);
 	}
+	
+	
+	/*
+	 * check to see if database has updated for all house_ids
+	 * return an array of
+	 */
+	public boolean[] checkUpdates(int[] ids)
+	{
+		boolean[] updated = new boolean[ids.length];
+		for (int i=0; i<ids.length; i++)
+		{
+			//get most-recent value for ID
+			
+		}
+	}
 
 	
 	@Override
@@ -289,6 +316,16 @@ public class DatabaseReader implements Runnable
 	 */
 	public void run()
 	{
-		//TODO SETUP AUTO UPDATING AND RUN
+		try 
+		{
+			this.open();
+			this.initialize();
+			
+			
+		} 
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+		}
 	}
 }

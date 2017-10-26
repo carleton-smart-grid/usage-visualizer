@@ -44,7 +44,7 @@ public class UsageControl implements Runnable
 	//generic constructor
 	public UsageControl(String dbPath, double updatePeriod) throws FileNotFoundException, SQLException
 	{
-		db = new DatabaseReader(dbPath, 100);
+		db = new DatabaseReader(dbPath, true);
 		ui = new UsageView(false);
 		this.updatePeriod = updatePeriod;
 	}
@@ -87,7 +87,6 @@ public class UsageControl implements Runnable
 				db.initialize();
 				db.close();
 				
-				System.out.println("updated!");
 				ui.displayDateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
 			}
 		}
