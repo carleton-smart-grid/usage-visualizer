@@ -2,14 +2,22 @@
 *Class:             DatabaseReader.java
 *Project:          	Usage Visualizer
 *Author:            Jason Van Kerkhoven
-*Date of Update:    15/10/2017
-*Version:           1.0.0
+*Date of Update:    26/10/2017
+*Version:           1.1.0
 *
 *Purpose:           Read information from an SQLite3 database configured to 
 *					store usage data in a single table.
 *					
+*					Keep database updated if run on own thread.
 * 
-*Update Log			v1.0.0
+*Update Log			v1.1.0
+*						- added method to check for update on IDS
+*						- added map datatype to hold most-recent samples per house
+*						- removed getMostRecent() method
+*						- restructured initialize() method into self and method getSamples()
+*						- added verbose-ness
+*						- added method to update only series that need updating
+*					v1.0.0
 *						- null
 */
 package ctrl;
@@ -25,16 +33,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.TreeMap;
+
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import datatypes.UsageSample;
 //import local packages
 import datatypes.UsageSeries;
 
 
 
-public class DatabaseReader implements Runnable
+public class DatabaseReader
 {
 	//declaring static class constants
 	public static final String[] COLUMN_NAMES = {"date", "time", "house_id", "usage"};
@@ -47,30 +60,32 @@ public class DatabaseReader implements Runnable
 	
 	//declaring instance constants
 	public final int MAX_SAMPLES;
+	public final boolean VERBOSE;
 	
 	//declaring instance variables
 	private String dbPath;
-	private boolean lockFlag;
 	private Connection connection;
 	private XYSeriesCollection series;
+	private TreeMap<Integer, UsageSample> lastReadSamples;
 	
 	
-	//default constructor
+	//v1.1.0 constructor
 	public DatabaseReader(String dbPath) throws FileNotFoundException, SQLException
 	{
-		this(dbPath, UsageSeries.DEFAULT_MAX_ITEMS);
+		this(dbPath, UsageSeries.DEFAULT_MAX_ITEMS, true);
 	}
-	
 	//full constructor
-	public DatabaseReader(String dbPath, int datapoints) throws FileNotFoundException, SQLException
+	public DatabaseReader(String dbPath, int datapoints, boolean verbose) throws FileNotFoundException, SQLException
 	{
 		File db = new File(dbPath);
 		if (db.exists())
 		{
 			this.dbPath = dbPath;
-			MAX_SAMPLES = datapoints;
-			lockFlag = false;
-			series = new XYSeriesCollection();
+			this.series = new XYSeriesCollection();
+			this.lastReadSamples = new TreeMap<Integer, UsageSample>();
+			
+			this.MAX_SAMPLES = datapoints;
+			this.VERBOSE = verbose;
 		}
 		else
 		{
@@ -80,121 +95,22 @@ public class DatabaseReader implements Runnable
 	
 	
 	//close connection to db
-	public synchronized void close()
+	public void close()
 	{
 		try
 		{
-			//wait for lock
-			while (lockFlag)
-			{
-				this.wait();
-			}
-			
 			connection.close();
 		}
-		catch (InterruptedException e)
-		{
-			e.printStackTrace();
-			System.exit(0);
-		}
-		catch (SQLException e){}
+		catch (SQLException e){}	//if this exception occurs ???
 	}
 	
 	
 	//open the connection to db
-	public synchronized void open() throws SQLException
+	public void open() throws SQLException
 	{
-		try
-		{
-			//wait for lock
-			while (lockFlag)
-			{
-				this.wait();
-			}
-			
-			//connection
-			connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
-			connection.setAutoCommit(false);
-		}
-		catch (InterruptedException e)
-		{
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
-	
-	
-	/*
-	 * read up to n samples of usage per house_id
-	 * COSTLY OPERATION AS n INCREASES IN SIZE
-	 */
-	private synchronized XYSeriesCollection getNSamples(int n) throws SQLException
-	{
-		//wait for lock
-		while (lockFlag)
-		{
-			try
-			{
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				e.printStackTrace();
-				System.exit(0);
-			}
-		}
-		
-		//get all ids and prep container for return
-		Integer[] distinctIds = this.getDistinctIds();
-		lockFlag = true;
-		XYSeriesCollection returnable = new XYSeriesCollection();
-		//open database input statement for queries
-		Statement s = connection.createStatement();
-		
-		//get most recent MAX_SAMPLES entries for each house_id
-		for (int i=0; i<distinctIds.length; i++)
-		{
-			//create SQL query string and query database
-			String query = "SELECT " + 
-							COLUMN_NAMES[0] + "," + COLUMN_NAMES[1] + "," + COLUMN_NAMES[3] + 
-							" FROM " + TABLE_NAME +
-							" WHERE " + COLUMN_NAMES[2] + "=" + distinctIds[i] +
-							" ORDER BY " + COLUMN_NAMES[0] + " DESC, " +
-							COLUMN_NAMES[1] + " DESC " +
-							"LIMIT " + n;
-			ResultSet results = s.executeQuery(query);
-			//parse results
-			UsageSeries data = new UsageSeries("id=" + distinctIds[i], false, true, distinctIds[i]);
-			while (results.next())
-			{
-				//parse row data into DataPoint
-				String sDate = results.getString(COLUMN_NAMES[0]);
-				String sTime = results.getString(COLUMN_NAMES[1]);
-				double usage = results.getDouble(COLUMN_NAMES[3]);
-				
-				String[] dateComp = sDate.split("-");
-				String[] timeComp = sTime.split(":");
-
-				Date date = new Date(Integer.parseInt(dateComp[0])-1900,
-									Integer.parseInt(dateComp[1]),
-									Integer.parseInt(dateComp[2]),
-									Integer.parseInt(timeComp[0]),
-									Integer.parseInt(timeComp[1]));
-				
-				//add to series
-				data.add(date,usage);
-			}
-			
-			//add returnable
-			returnable.addSeries(data);
-			results.close();
-		}
-		
-		//close active resources and return
-		s.close();
-		lockFlag = false;
-		this.notifyAll();
-		return returnable;
+		//connection
+		connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+		connection.setAutoCommit(false);
 	}
 	
 	
@@ -202,23 +118,8 @@ public class DatabaseReader implements Runnable
 	 * get the current house_ids in use
 	 * returns an array of the house_ids found, empty array if no entries
 	 */
-	public synchronized Integer[] getDistinctIds() throws SQLException
+	public int[] getDistinctIds() throws SQLException
 	{
-		//wait for lock
-		while (lockFlag)		//TODO DEADLOCK HERE
-		{
-			try
-			{
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				e.printStackTrace();
-				System.exit(0);
-			}
-		}
-		lockFlag = true;
-		
 		//check database for all distinct house_ids
 		Statement session = connection.createStatement();
 		ResultSet results = session.executeQuery(FIND_ALL_HOUSE_IDS);
@@ -234,61 +135,235 @@ public class DatabaseReader implements Runnable
 		session.close();
 		results.close();
 		
-		lockFlag = false;
-		this.notifyAll();
-		return distinctIds.toArray(new Integer[0]);
+		//return
+		Integer[] arr = distinctIds.toArray(new Integer[0]);
+		return Arrays.stream(arr).mapToInt(Integer::intValue).toArray();
 	}
 	
 	
 	//get total number of distinct IDs
-	public synchronized int getSeriesCount()
+	public int getSeriesCount()
 	{
 		return series.getSeriesCount();
 	}
 	
 	
 	//get all series
-	public synchronized List<UsageSeries> getSeries()
+	public List<UsageSeries> getSeries()
 	{
 		return series.getSeries();
 	}
 	
 	
 	//get collection
-	public synchronized XYSeriesCollection getCollection()
+	public XYSeriesCollection getCollection()
 	{
 		return series;
 	}
+	
 	
 	/*
 	 * read up to MAX_SAMPLES of usages values per house_id and 
 	 * Default max samples is 100, so if 10 house's will load 1000 usage values
 	 * 
-	 * THIS IS A !_VERY_! COSTLY OPERATION AND SHOULD BE USED SPARINGLY
+	 * THIS IS A VERY COSTLY OPERATION AND SHOULD BE USED SPARINGLY
 	 */
 	public void initialize() throws SQLException
 	{
-		series = getNSamples(MAX_SAMPLES);
+		if (VERBOSE)
+		{
+			System.out.println("Begin init...");
+			System.out.println("Querying maximum <" + this.MAX_SAMPLES + "> most-recent DataPoints per distinct id(s)...");
+		}
+		
+		//get all ids and prep series
+		int[] distinctIds = this.getDistinctIds();
+		series = new XYSeriesCollection();
+		
+		//get most recent MAX_SAMPLES entries for each house_id
+		for (int i=0; i<distinctIds.length; i++)
+		{
+			//get most recent values from target id
+			UsageSeries samples = getMostRecentSamples(distinctIds[i], MAX_SAMPLES);
+			//add returnable
+			series.addSeries(samples);
+		}
+		
+		if (VERBOSE)
+		{
+			List<UsageSeries> samples = this.getSeries();
+			for(UsageSeries series : samples)
+			{
+				System.out.println("Found " + 
+									series.getItemCount() + "/" + 
+									series.getMaximumItemCount() + 
+									" DataPoints for ID=" + series.getHouseId());
+				System.out.println(series.toString());
+			}
+			System.out.println("Init complete!\n");
+		}
+		
+		this.checkUpdates(distinctIds);
 	}
 	
 	
 	/*
-	 * get the most recent data for each house_id
-	 * returns an array of n DataPoints, where n is the number of distinct house_ids
-	 * in the database
+	 * update a particular house_ids sample series
+	 * TODO document this but better
 	 */
-	public XYSeriesCollection getMostRecent() throws SQLException
+	public UsageSeries getMostRecentSamples(int houseId, int quantity) throws SQLException
 	{
-		return this.getNSamples(1);
+		//open database input statement for queries
+		Statement s = connection.createStatement();
+		
+		//create SQL query string and query database
+		String query = "SELECT " + 
+						COLUMN_NAMES[0] + "," + COLUMN_NAMES[1] + "," + COLUMN_NAMES[3] + 
+						" FROM " + TABLE_NAME +
+						" WHERE " + COLUMN_NAMES[2] + "=" + houseId +
+						" ORDER BY " + COLUMN_NAMES[0] + " DESC, " +
+						COLUMN_NAMES[1] + " DESC " +
+						"LIMIT " + MAX_SAMPLES;
+		ResultSet results = s.executeQuery(query);
+		//parse results
+		UsageSeries data = new UsageSeries("id=" + houseId, false, true, houseId);
+		while (results.next())
+		{
+			//parse row data into DataPoint
+			String sDate = results.getString(COLUMN_NAMES[0]);
+			String sTime = results.getString(COLUMN_NAMES[1]);
+			double usage = results.getDouble(COLUMN_NAMES[3]);
+			
+			String[] dateComp = sDate.split("-");
+			String[] timeComp = sTime.split(":");
+
+			Date date = new Date(Integer.parseInt(dateComp[0])-1900,
+								Integer.parseInt(dateComp[1]),
+								Integer.parseInt(dateComp[2]),
+								Integer.parseInt(timeComp[0]),
+								Integer.parseInt(timeComp[1]));
+			
+			//add to series
+			data.add(date,usage);
+		}
+		
+		//close reasources and return
+		s.close();
+		results.close();
+		return data;
+	}
+	
+	
+	
+	/*
+	 * check to see if database has updated since last read
+	 * return an array of
+	 */
+	public boolean[] checkUpdates(int[] ids) throws SQLException
+	{
+		//open database input statement for queries and prep returnable
+		Statement s = connection.createStatement();
+		boolean[] updated = new boolean[ids.length];
+		
+		for (int i=0; i<ids.length; i++)
+		{
+			//create SQL query string and query database
+			String query = "SELECT " + 
+							COLUMN_NAMES[0] + "," + COLUMN_NAMES[1] + "," + COLUMN_NAMES[3] + 
+							" FROM " + TABLE_NAME +
+							" WHERE " + COLUMN_NAMES[2] + "=" + ids[i] +
+							" ORDER BY " + COLUMN_NAMES[0] + " DESC, " +
+							COLUMN_NAMES[1] + " DESC " +
+							"LIMIT 1";
+			ResultSet results = s.executeQuery(query);
+			
+			//parse results and return
+			results.next();
+			String sDate = results.getString(COLUMN_NAMES[0]);
+			String sTime = results.getString(COLUMN_NAMES[1]);
+			double usage = results.getDouble(COLUMN_NAMES[3]);
+			
+			String[] dateComp = sDate.split("-");
+			String[] timeComp = sTime.split(":");
+
+			Date date = new Date(Integer.parseInt(dateComp[0])-1900,
+								Integer.parseInt(dateComp[1]),
+								Integer.parseInt(dateComp[2]),
+								Integer.parseInt(timeComp[0]),
+								Integer.parseInt(timeComp[1]));
+			
+			//check if newly read value differs from old
+			UsageSample read = new UsageSample(date, usage);
+			UsageSample prev = lastReadSamples.get(ids[i]);
+			
+			//first instance of sample for this house ID found
+			if (prev == null)
+			{
+				lastReadSamples.put(ids[i], read);
+				updated[i] = true;
+			}
+			//latest sample has not changed
+			else if (read.equals(prev))
+			{
+				updated[i] = false;
+			}
+			//latest sample has changed
+			else
+			{
+				updated[i] = true;
+				prev.setDate(read.getDate());
+				prev.setUsage(read.getUsage());
+			}
+		}
+		return updated;
 	}
 
-	
-	@Override
+
 	/*
-	 * periodically check database for new entries to add to series
+	 * check if series needs to be updated
+	 * will return true if ANY series in collection updated
 	 */
-	public void run()
+	public boolean updateSeries() throws SQLException
 	{
-		//TODO SETUP AUTO UPDATING AND RUN
+		boolean r = false;
+		int[] ids = this.getDistinctIds();
+		
+		if (VERBOSE) 
+			System.out.println("Checking database for updates...");
+		
+		boolean[] updated = this.checkUpdates(ids);
+		for (int i=0; i<ids.length; i++)
+		{
+			if (updated[i])
+			{
+				if (VERBOSE)
+					System.out.println("ID=" + ids[i] + " -- New sample found ");
+				
+				boolean swapFlag = false;
+				UsageSeries updatedSeries = this.getMostRecentSamples(ids[i], MAX_SAMPLES);
+				for (int c=0; c<series.getSeriesCount(); c++)
+				{
+					UsageSeries target = (UsageSeries)series.getSeries(c);
+					if (target.getHouseId() == ids[i]);
+					{
+						series.removeSeries(target);
+						series.addSeries(updatedSeries);
+						swapFlag = true;
+						r = true;
+						break;
+					}
+				}
+				if (!swapFlag)
+				{
+					series.addSeries(updatedSeries);
+					r = true;
+				}
+			}
+		}
+		
+		if (VERBOSE)
+			System.out.println("Update complete!\n");
+		
+		return r;
 	}
 }

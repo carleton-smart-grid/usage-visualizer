@@ -2,7 +2,7 @@
 *Class:             UsageView.java
 *Project:          	Usage Visualizer
 *Author:            Jason Van Kerkhoven
-*Date of Update:    15/10/2017
+*Date of Update:    26/10/2017
 *Version:           1.0.0
 *
 *Purpose:           Displays graph information and other data analytics to user.
@@ -10,7 +10,12 @@
 *					
 * 
 *Update Log			v1.0.0
-*						- null
+*						- broken into tabbed view
+*						- time of last updated added for linegraph view
+*					v0.1.0
+*						- proof of concept for demo	
+*						- display line graph
+*						- room added for text display/console
 */
 package ui;
 
@@ -18,6 +23,7 @@ package ui;
 
 //import external libraries
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -31,82 +37,74 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+
+import java.awt.Font;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 
 
 public class UsageView extends JFrame
 {
+	//declaring class constants
+	private static final Font FONT_NORMAL = new Font("DialogInput", Font.BOLD, 18);;
+	
+	//declaring instance constants
+	public final String WINDOW_TITLE;
+	
 	//declaring local instance variables
 	private JPanel contentPane;
-	private JTextArea infoText;
 	private JFreeChart chart;
 	private ChartPanel chartPanel;
+	private JTabbedPane tabs;
+	private JTextField lineGraphTxt;
 
 
 	//generic constructor
-	public UsageView(boolean fullscreen) 
+	public UsageView(boolean fullscreen, String title) 
 	{
 		//configure frame
+		this.WINDOW_TITLE = title;
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setBounds(100, 100, 1000, 600);
-		contentPane = new JPanel();
+		this.contentPane = new JPanel();
 		this.setContentPane(contentPane);
 		this.contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		this.contentPane.setLayout(new BorderLayout(0, 0));
-		contentPane.setLayout(new BorderLayout(0, 0));
+		this.setTitle(WINDOW_TITLE);
+		
+		//setup tabbed view
+		tabs = new JTabbedPane(JTabbedPane.TOP);
+		contentPane.add(tabs, BorderLayout.CENTER);
 		
 		
-		/* TEST CONFIG FOR CHART */
-		XYSeries s1 = new XYSeries("series");
-		XYSeries s2 = new XYSeries("series 2");
-		for (float i=0; i<=10; i++)
-		{
-			s1.add(i, i);
-			s2.add(i, 0.25*i);
-		}
-		XYSeriesCollection x = new XYSeriesCollection();
-		x.addSeries(s1);
-		x.addSeries(s2);
-		chart = ChartFactory.createXYLineChart(
-		         "Test Chart", 
-		         "LABEL 1",
-		         "LABEL 2", 
-		         x,
-		         PlotOrientation.VERTICAL, 
-		         true, true, false);
-		/* TEST CONFIG FOR CHART */
-		
-		//add and configure panel for chart
+		//add and configure panel for chart	
 		chartPanel = new ChartPanel(chart);
 		chartPanel.setFillZoomRectangle(true);
 		chartPanel.setMouseWheelEnabled(true);
 		chartPanel.setRangeZoomable(false);
-        contentPane.add(chartPanel, BorderLayout.CENTER);
 		
-		//add panels for other info
-		JPanel infoPanel = new JPanel();
-		infoPanel.setLayout(new BorderLayout(0, 0));
-		contentPane.add(infoPanel, BorderLayout.EAST);
+		JPanel lineGraphPanel = new JPanel();
+		lineGraphPanel.setLayout(new BorderLayout(0, 0));
+		lineGraphPanel.add(chartPanel, BorderLayout.CENTER);
 		
-		//add scrolling text area for misc info display
-		JScrollPane scrollPane = new JScrollPane();
-		infoText = new JTextArea();
-		infoText.setEditable(false);
-		scrollPane.setPreferredSize(new Dimension(300,0));
-		scrollPane.setViewportView(infoText);
-		infoPanel.add(scrollPane, BorderLayout.CENTER);
+		lineGraphTxt = new JTextField( );
+		lineGraphTxt.setEditable(false);
+		lineGraphTxt.setBorder(null);
+		lineGraphTxt.setFont(FONT_NORMAL);
+		lineGraphTxt.setBackground(Color.WHITE);
+		lineGraphTxt.setHorizontalAlignment(SwingConstants.RIGHT);
+		lineGraphPanel.add(lineGraphTxt, BorderLayout.NORTH);
+		
+		tabs.addTab("Line Graph", null, lineGraphPanel, null);
 	}
-	
-	
-	//update the info text
-	public void setInfoText(String txt)
-	{
-		infoText.setText("\n  " + txt.replace("\n", "\n  "));
-	}
-	
+
 	
 	//update the displayed graph
-	public void displayDateLineChart(XYSeriesCollection seriesSet, String title, String xLabel, String yLabel)
+	public void updateLineChart(XYSeriesCollection seriesSet, String title, String xLabel, String yLabel)
 	{
 		//create and add new chart
 		chart = ChartFactory.createXYLineChart(
@@ -117,7 +115,11 @@ public class UsageView extends JFrame
 		         PlotOrientation.VERTICAL, 
 		         true, true, false);
 		chartPanel.setChart(chart);
-		chartPanel.setRangeZoomable(false);
+		
+		//update text
+		Calendar c = Calendar.getInstance();
+        SimpleDateFormat tf = new SimpleDateFormat("HH:mm:ss");
+		lineGraphTxt.setText("Updated at: " + tf.format(c.getTime()) + " ");
 		
 		//set axis to display ms from epoch as human-readable date-times
 		chart.getXYPlot().setDomainAxis(new DateAxis(xLabel));

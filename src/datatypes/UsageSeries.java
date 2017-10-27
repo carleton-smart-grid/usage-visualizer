@@ -46,10 +46,18 @@ public class UsageSeries extends XYSeries
 		return houseId;
 	}
 	
+	
+	public void add(UsageSample usage)
+	{
+		this.add(usage.getDate(), usage.getUsage());
+	}
+	
+	
 	public void add(Date date, double usage)
 	{
 		this.add(new XYDataItem(new Long(date.getTime()), new Double(usage)));
 	}
+	
 	
 	@Override
 	public String toString()
