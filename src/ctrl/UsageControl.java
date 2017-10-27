@@ -2,15 +2,17 @@
 *Class:             UsageControl.java
 *Project:          	Usage Visualizer
 *Author:            Jason Van Kerkhoven
-*Date of Update:    15/10/2017
-*Version:           1.0.0
+*Date of Update:    26/10/2017
+*Version:           1.0.1
 *
 *Purpose:           Main runnable class for Usage Visualizer.
 *					Synchronizes everything, and manages updating the graph.
 *					Handles any user inputs from UI.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- run method rewritten to use DatabaseReader v1.1.0
+*					v1.0.0
 *						- null
 */
 package ctrl;
@@ -22,6 +24,8 @@ import java.io.FileNotFoundException;
 import java.sql.*;
 import java.util.List;
 
+import org.sqlite.SQLiteException;
+
 //import packages
 import ui.UsageView;
 import datatypes.UsageSeries;
@@ -31,6 +35,7 @@ import datatypes.UsageSeries;
 public class UsageControl implements Runnable
 {
 	//declaring static constants
+	private static final String TITLE = "Usage Visualizer v1.0.1";
 	private static final String GRAPH_TITLE = "Reported Power Usage";
 	private static final String X_AXIS = "Date";
 	private static final String Y_AXIS = "Power Usage (kWh)";
@@ -38,14 +43,14 @@ public class UsageControl implements Runnable
 	//declaring local instance variables
 	private DatabaseReader db;
 	private UsageView ui;
-	private double updatePeriod;
+	private long updatePeriod;
 	
 	
 	//generic constructor
-	public UsageControl(String dbPath, double updatePeriod) throws FileNotFoundException, SQLException
+	public UsageControl(String dbPath, long updatePeriod) throws FileNotFoundException, SQLException
 	{
-		db = new DatabaseReader(dbPath, true);
-		ui = new UsageView(false);
+		db = new DatabaseReader(dbPath);
+		ui = new UsageView(false, TITLE);
 		this.updatePeriod = updatePeriod;
 	}
 	
@@ -56,45 +61,36 @@ public class UsageControl implements Runnable
 	{	
 		try
 		{
-			//get initial set of datapoints
-			System.out.println("Querying maximum <" + db.MAX_SAMPLES + "> most-recent DataPoints per distinct id(s)");
-			
+			//initialize db
 			db.open();
 			db.initialize();
 			db.close();
 			
-			List<UsageSeries> samples = db.getSeries();
-			for(UsageSeries series : samples)
-			{
-				System.out.println("Found " + 
-									series.getItemCount() + "/" + 
-									series.getMaximumItemCount() + 
-									" DataPoints for ID=" + series.getHouseId());
-				System.out.println(series.toString());
-			}
-			System.out.println("Done!");
-			
-			//enable gui
-			ui.displayDateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
+			//enable gui and setup
+			ui.updateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
 			ui.setVisible(true);
 			
-			//setup update frequency for graph  TODO THIS IS BAD FIX THIS GOOD FOR DEMO ONLY
+			//main loop
 			while(true)
-			{
-				Thread.sleep(500);
-				
-				db.open();			//TODO DO NOT INIT EACH TIME BAD FOR EFFICIENCY WHY STOP
-				db.initialize();
+			{	
+				//check for database updates
+				db.open();
+				if (db.updateSeries())
+				{
+					//update graph
+					ui.updateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
+				}
 				db.close();
 				
-				ui.displayDateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
+				try {
+					Thread.sleep(updatePeriod);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		catch (SQLException e)
-		{
-			e.printStackTrace();
-		}
-		catch (InterruptedException e)
 		{
 			e.printStackTrace();
 		}
@@ -108,7 +104,7 @@ public class UsageControl implements Runnable
 		{
 			try 
 			{
-				UsageControl ctrl = new UsageControl(args[0], Double.parseDouble(args[1]));
+				UsageControl ctrl = new UsageControl(args[0], Long.parseLong(args[1])*1000);
 				ctrl.run();
 			} 
 			catch (FileNotFoundException e) 

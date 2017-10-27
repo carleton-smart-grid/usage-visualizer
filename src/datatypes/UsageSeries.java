@@ -49,7 +49,7 @@ public class UsageSeries extends XYSeries
 	
 	public void add(UsageSample usage)
 	{
-		this.add(usage.date, usage.usage);
+		this.add(usage.getDate(), usage.getUsage());
 	}
 	
 	
