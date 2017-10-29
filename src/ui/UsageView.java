@@ -50,7 +50,11 @@ import java.util.Calendar;
 public class UsageView extends JFrame
 {
 	//declaring class constants
-	private static final Font FONT_NORMAL = new Font("DialogInput", Font.BOLD, 18);;
+	private static final Font FONT_NORMAL = new Font("DialogInput", Font.BOLD, 18);
+	private static final String[] LINE_GRAPH_LABELS = {
+									"Reported Power Usage",
+									"Date",
+									"Power Usage (kWh)" };
 	
 	//declaring instance constants
 	public final String WINDOW_TITLE;
@@ -75,6 +79,12 @@ public class UsageView extends JFrame
 		this.contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		this.contentPane.setLayout(new BorderLayout(0, 0));
 		this.setTitle(WINDOW_TITLE);
+		if (fullscreen)
+		{
+			this.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+			this.setUndecorated(true);
+		}
+		
 		
 		//setup tabbed view
 		tabs = new JTabbedPane(JTabbedPane.TOP);
@@ -104,15 +114,15 @@ public class UsageView extends JFrame
 
 	
 	//update the displayed graph
-	public void updateLineChart(XYSeriesCollection seriesSet, String title, String xLabel, String yLabel)
+	public void updateLineTab(XYSeriesCollection seriesSet)
 	{
 		//create and add new chart
 		chart = ChartFactory.createXYLineChart(
-		         title, 
-		         xLabel,
-		         yLabel, 
+		         LINE_GRAPH_LABELS[0], 
+		         LINE_GRAPH_LABELS[1],
+		         LINE_GRAPH_LABELS[2], 
 		         seriesSet,
-		         PlotOrientation.VERTICAL, 
+		         PlotOrientation.VERTICAL,
 		         true, true, false);
 		chartPanel.setChart(chart);
 		
@@ -122,6 +132,6 @@ public class UsageView extends JFrame
 		lineGraphTxt.setText("Updated at: " + tf.format(c.getTime()) + " ");
 		
 		//set axis to display ms from epoch as human-readable date-times
-		chart.getXYPlot().setDomainAxis(new DateAxis(xLabel));
+		chart.getXYPlot().setDomainAxis(new DateAxis(LINE_GRAPH_LABELS[1]));
 	}	
 }

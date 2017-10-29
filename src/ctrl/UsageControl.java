@@ -67,7 +67,7 @@ public class UsageControl implements Runnable
 			db.close();
 			
 			//enable gui and setup
-			ui.updateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
+			ui.updateLineTab(db.getCollection());
 			ui.setVisible(true);
 			
 			//main loop
@@ -78,7 +78,7 @@ public class UsageControl implements Runnable
 				if (db.updateSeries())
 				{
 					//update graph
-					ui.updateLineChart(db.getCollection(), GRAPH_TITLE, X_AXIS, Y_AXIS);
+					ui.updateLineTab(db.getCollection());
 				}
 				db.close();
 				
@@ -104,7 +104,7 @@ public class UsageControl implements Runnable
 		{
 			try 
 			{
-				UsageControl ctrl = new UsageControl(args[0], Long.parseLong(args[1])*1000);
+				UsageControl ctrl = new UsageControl(args[0], Integer.parseInt(args[1])*1000);
 				ctrl.run();
 			} 
 			catch (FileNotFoundException e) 
