@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS usages;
+CREATE TABLE usages (date DATE, time TIME, house_id INTEGER, usage NUMERIC);
+
 INSERT INTO usages values(date('2017-01-01'),time('10:00'), 1, 2.50);
 INSERT INTO usages values(date('2017-01-01'),time('10:00'), 2, 1.20);
 INSERT INTO usages values(date('2017-01-01'),time('10:00'), 3, 0.80);

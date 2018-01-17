@@ -17,7 +17,7 @@
 *						- display line graph
 *						- room added for text display/console
 */
-package ui;
+package dbvis.ui;
 
 
 

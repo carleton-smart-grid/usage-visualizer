@@ -15,7 +15,7 @@
 *					v1.0.0
 *						- null
 */
-package ctrl;
+package dbvis.ctrl;
 
 
 
@@ -23,12 +23,11 @@ package ctrl;
 import java.io.FileNotFoundException;
 import java.sql.*;
 import java.util.List;
-
 import org.sqlite.SQLiteException;
 
 //import packages
-import ui.UsageView;
-import datatypes.UsageSeries;
+import dbvis.ui.UsageView;
+import dbvis.datatypes.UsageSeries;
 
 
 

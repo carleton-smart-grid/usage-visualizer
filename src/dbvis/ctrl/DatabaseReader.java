@@ -20,7 +20,7 @@
 *					v1.0.0
 *						- null
 */
-package ctrl;
+package dbvis.ctrl;
 
 
 
@@ -41,9 +41,10 @@ import java.util.TreeMap;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import datatypes.UsageSample;
+
 //import local packages
-import datatypes.UsageSeries;
+import dbvis.datatypes.UsageSeries;
+import dbvis.datatypes.UsageSample;
 
 
 

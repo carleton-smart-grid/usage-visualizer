@@ -12,7 +12,7 @@
 *Update Log			v1.0.0
 *						- null
 */
-package datatypes;
+package dbvis.datatypes;
 
 
 
