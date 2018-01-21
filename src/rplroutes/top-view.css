@@ -1,0 +1,26 @@
+
+/* Generic page styling */
+h1 {
+  text-align: center;
+}
+
+/* Styling for chart object */
+.chart {
+}
+
+/* Stlying for node*/
+.node {
+  color: #545454;
+  border: 4px solid #545454;
+  border-radius: 25px;
+}
+
+/* Styling for contents in node */
+.node p {
+  font-size: 16px;
+  line-height: 20px;
+  height: 20px;
+  font-weight: bold;
+  padding: 10px;
+  margin: 0;
+}

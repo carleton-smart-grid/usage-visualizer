@@ -84,7 +84,7 @@ var config = {
 };
 
 
-var simple_chart_config = [
+var chart = [
 	config,
 	dodag, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12
 ];
