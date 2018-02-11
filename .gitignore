@@ -1,1 +1,4 @@
 dir_to_ignore/lib/treant-js-master
+/bin/
+
+/.settings/
