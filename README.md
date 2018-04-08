@@ -21,6 +21,6 @@ It should be noted that the update period should be less than the read-write per
 ## Running the Comms. Spoofer Tool
 It is advised **before** running the [comms. spoofer](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/dat/spoofcomms.py) script, the SQLite3 database is cleared. This can be done conveniently through running the SQLite3 script `reset.txt`. This can be done through the terminal command:<br> `sqlite3 database.db < reset.txt`.
 
-The comms. spoofer is a simple python script run from terminal using the command: `python3 spoofcomms.py dataset.csv database.db rwp`.
+The comms. spoofer is a simple python script run from terminal using the command: `python3 spoofcomms.py [dataset.csv] [database.db] [rwp]`.
 
 In which `dataset.csv` is the relative path/file name of the CSV file containing the usage values ,  `database.db` is the relative path/file name of the SQLite3 database file, and `rwp` is the period which entries are read from the CSV file and added to the database.
