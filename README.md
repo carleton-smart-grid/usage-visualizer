@@ -6,7 +6,7 @@ The Graphing Tool is designed to allow a visual representation of the dataflow i
 
 # How to Use
 ## Running the Graphing Tool
-The [graphing tool](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/src/ctrl/UsageControl.java) should be run as a pre-build, executable .jar file from terminal using the command:<br> `java -jar usage-view.jar data.db T`.
+The [graphing tool](https://github.com/carleton-smart-grid/usage-visualizer/blob/master/src/ctrl/UsageControl.java) should be run as a pre-build, executable .jar file from terminal using the command:<br> `java -jar usage-view.jar [data.db] [T]`.
 
 
 In which, `data.db` is the relative path to the SQLite3 database file, and `T` is the update period (given as this is normally run with a fairly low refresh rate, period is less cumbersome to type) of the graph.
